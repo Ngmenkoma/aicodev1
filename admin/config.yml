@@ -71,7 +71,7 @@ collections:
           - {label: "Image", name: "image", widget: "image"}
           - {label: "Body", name: "body", widget: "markdown"}
 
-           - file: "content/Contact/index.md"
+        - file: "content/Contact/index.md"
         label: "Contact Page"
         name: "contact"
         fields:
