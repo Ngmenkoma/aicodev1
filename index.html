@@ -398,17 +398,9 @@
     </section>
 
     <!-- Projects -->
-    <section class="section" id="projects">
-        <div class="container">
-            <div class="section-title"><h2>Our Projects</h2><p>We implement sustainable projects that create lasting impact in communities.</p></div>
-            <div class="projects-grid">
-                <div class="project-card"><div class="project-image"><img src="Social Behaviour.jpg" alt="Malaria Prevention"><div class="project-badge">Ongoing</div></div><div class="project-content"><h3>Social Behaviour Change Communication to prevent Malaria in pregnancy</h3><p>Increasing IPTp uptake by influencing knowledge, attitudes, and social norms among pregnant women, families, and health workers.</p></div></div>
-                <div class="project-card"><div class="project-image"><img src="Healthy Mothers, Smiling Babies Campaign Project.jpg" alt="Maternal Health"><div class="project-badge">Completed</div></div><div class="project-content"><h3>Healthy Mothers, Smiling Babies Campaign</h3><p>Addressing maternal and newborn mortality through high-quality care that supports women physically and emotionally before, during, and after birth.</p></div></div>
-                <div class="project-card"><div class="project-image"><img src="Increasing Covid-19 Vaccine uptake in Ghana.jpg" alt="COVID-19 Vaccination"><div class="project-badge">Ongoing</div></div><div class="project-content"><h3>Increasing COVID-19 Vaccine Uptake in Ghana</h3><p>Community engagement and education initiatives to increase vaccination rates through awareness campaigns and addressing vaccine hesitancy.</p></div></div>
-                <div class="project-card"><div class="project-image"><img src="Increasing Immunization coverage in Children less than five years through community advocacy and Mobilization..jpg" alt="Child Immunization"><div class="project-badge">Ongoing</div></div><div class="project-content"><h3>Increasing Immunization Coverage in Children</h3><p>Community advocacy and mobilization to improve immunization rates for children under five years through outreach and education.</p></div></div>
-            </div>
-        </div>
-    </section>
+  <div class="projects-grid" id="projectsGrid">
+    <p class="news-loading"><i class="fas fa-spinner fa-spin"></i> Loading projects...</p>
+</div>
 
     <!-- Gallery -->
     <section class="section gallery" id="gallery">
@@ -632,5 +624,69 @@
         // Load on page ready
         fetchNews(activeQuery);
     </script>
+    <script>
+async function loadProjects() {
+  const grid = document.getElementById('projectsGrid');
+  try {
+    const res = await fetch('https://api.github.com/repos/Ngmenkoma/aicodev1/contents/content/Projects');
+    if (!res.ok) throw new Error('No projects folder yet');
+    const files = await res.json();
+
+    const projects = await Promise.all(
+      files.filter(f => f.name.endsWith('.md')).map(async f => {
+        const raw = await fetch(f.download_url).then(r => r.text());
+        return parseEntry(raw);
+      })
+    );
+
+    if (projects.length === 0) {
+      grid.innerHTML = '<p>No projects yet.</p>';
+      return;
+    }
+
+    grid.innerHTML = projects.map(p => `
+      <div class="project-card">
+        <div class="project-image">
+          <img src="${resolveImage(p.image)}" alt="${p.title || ''}">
+        </div>
+        <div class="project-content">
+          <h3>${p.title || ''}</h3>
+          <p>${p.body || ''}</p>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    grid.innerHTML = '<p>No projects yet.</p>';
+  }
+}
+
+function resolveImage(path) {
+  if (!path) return 'Logo.jpg';
+  // Decap stores uploads like /uploads/filename.jpg — convert to a raw GitHub URL
+  if (path.startsWith('/uploads/')) {
+    return `https://raw.githubusercontent.com/Ngmenkoma/aicodev1/main${path}`;
+  }
+  return path;
+}
+
+function parseEntry(raw) {
+  const match = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  const data = {};
+  if (match) {
+    match[1].split('\n').forEach(line => {
+      const idx = line.indexOf(':');
+      if (idx > -1) {
+        const key = line.slice(0, idx).trim();
+        const value = line.slice(idx + 1).trim().replace(/^["']|["']$/g, '');
+        data[key] = value;
+      }
+    });
+    data.body = match[2].trim();
+  }
+  return data;
+}
+
+loadProjects();
+</script>
 </body>
 </html>
