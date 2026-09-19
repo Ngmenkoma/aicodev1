@@ -2,6 +2,7 @@ backend:
   name: github
   repo: Ngmenkoma/aicodev1
   branch: main
+  base_url: https://decap-cms-oauth-brown.vercel.app
 
 media_folder: "uploads"
 public_folder: "/uploads"
