@@ -1,6 +1,6 @@
 ---
-title: wwwwwwwwwwwwwwwwwww
-date: 2026-09-19T03:06:00.000+00:00
-image: /uploads/social-behaviour-change-communication-to-prevent-malaria-in-pregnancy-through-increasing-iptp-uptake..jpg
+title: Healthy Mothers, Smiling Babies Campaign
+date: 2026-09-19T03:34:00.000+00:00
+image: /uploads/healthy-mothers-smiling-babies-campaign-project.jpg
 ---
-wwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+Addressing maternal and newborn mortality through high-quality care that supports women physically and emotionally before, during, and after birth.
