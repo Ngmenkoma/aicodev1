@@ -171,13 +171,12 @@
             transform: translateY(-2px); box-shadow: 0 5px 15px rgba(42,157,143,0.2);
         }
 
-        .news-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-            gap: 25px;
-
-        }
-
+       .news-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 25px;
+    justify-content: center;
+}
         .news-card {
             background: white; border-radius: 15px;
             overflow: hidden; box-shadow: var(--shadow);
