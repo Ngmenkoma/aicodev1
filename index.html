@@ -622,32 +622,71 @@ const res = await fetch(`https://data.jsdelivr.com/v1/packages/gh/${REPO}@${BRAN
         }
     }
 
-    // Projects
-loadCollection('Projects', 'projectsGrid', (p, i) => `
-  <div class="project-card">
-    <div class="project-image"><img src="${resolveImage(p.image)}" alt="${p.title || ''}"></div>
-    <div class="project-content">
-      <h3>${p.title || ''}</h3>
-      <p>${p.body || ''}</p>
-      <span class="card-readmore" onclick="openDetailModal('${escapeAttr(p.title)}', '${escapeAttr(p.body)}', '${resolveImage(p.image)}', '')">Read more →</span>
-    </div>
-  </div>
-`, 'No projects yet.');
+   // Store loaded entries so modal can look them up safely by index
+let projectsData = [];
+let newsData = [];
+
+// Projects
+async function renderProjects() {
+    const grid = document.getElementById('projectsGrid');
+    try {
+        const files = await getFileList();
+        const matches = files.filter(f => f.name.startsWith('/content/Projects/') && f.name.endsWith('.md'));
+        if (matches.length === 0) { grid.innerHTML = '<p>No projects yet.</p>'; return; }
+        projectsData = await Promise.all(
+            matches.map(async f => {
+                const raw = await fetch(`https://cdn.jsdelivr.net/gh/${REPO}@${BRANCH}${f.name}`).then(r => r.text());
+                return parseEntry(raw);
+            })
+        );
+        grid.innerHTML = projectsData.map((p, i) => `
+            <div class="project-card">
+                <div class="project-image"><img src="${resolveImage(p.image)}" alt="${p.title || ''}"></div>
+                <div class="project-content">
+                    <h3>${p.title || ''}</h3>
+                    <p>${p.body || ''}</p>
+                    <span class="card-readmore" data-type="project" data-index="${i}">Read more →</span>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        grid.innerHTML = '<p>No projects yet.</p>';
+    }
+}
 
 // News
-loadCollection('News', 'newsGrid', (n, i) => `
-  <div class="news-card">
-    <div class="news-card-image">
-      ${n.image ? `<img src="${resolveImage(n.image)}" alt="${n.title || ''}">` : `<div class="news-card-image-placeholder">📰</div>`}
-    </div>
-    <div class="news-card-content">
-      <div class="news-card-meta"><span class="news-card-source">AICODEV</span></div>
-      <h3 class="news-card-title">${n.title || ''}</h3>
-      <p class="news-card-desc">${n.body || ''}</p>
-      <span class="card-readmore" onclick="openDetailModal('${escapeAttr(n.title)}', '${escapeAttr(n.body)}', '${resolveImage(n.image)}', 'AICODEV')">Read more →</span>
-    </div>
-  </div>
-`, 'No news yet.');
+async function renderNews() {
+    const grid = document.getElementById('newsGrid');
+    try {
+        const files = await getFileList();
+        const matches = files.filter(f => f.name.startsWith('/content/News/') && f.name.endsWith('.md'));
+        if (matches.length === 0) { grid.innerHTML = '<p>No news yet.</p>'; return; }
+        newsData = await Promise.all(
+            matches.map(async f => {
+                const raw = await fetch(`https://cdn.jsdelivr.net/gh/${REPO}@${BRANCH}${f.name}`).then(r => r.text());
+                return parseEntry(raw);
+            })
+        );
+        grid.innerHTML = newsData.map((n, i) => `
+            <div class="news-card">
+                <div class="news-card-image">
+                    ${n.image ? `<img src="${resolveImage(n.image)}" alt="${n.title || ''}">` : `<div class="news-card-image-placeholder">📰</div>`}
+                </div>
+                <div class="news-card-content">
+                    <div class="news-card-meta"><span class="news-card-source">AICODEV</span></div>
+                    <h3 class="news-card-title">${n.title || ''}</h3>
+                    <p class="news-card-desc">${n.body || ''}</p>
+                    <span class="card-readmore" data-type="news" data-index="${i}">Read more →</span>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        grid.innerHTML = '<p>No news yet.</p>';
+    }
+}
+
+renderProjects();
+renderNews();
     // Team
     loadCollection('Team', 'teamGrid', m => `
       <div class="team-member">
@@ -685,24 +724,40 @@ loadCollection('News', 'newsGrid', (n, i) => `
   return (str || '').replace(/'/g, "\\'").replace(/\n/g, ' ');
 }
 
-function openDetailModal(title, body, image, meta) {
-  document.getElementById('detailModalTitle').textContent = title;
-  document.getElementById('detailModalBody').textContent = body;
-  document.getElementById('detailModalImage').src = image;
-  document.getElementById('detailModalImage').style.display = image && image !== 'Logo.jpg' ? 'block' : 'none';
-  document.getElementById('detailModalMeta').textContent = meta;
-  document.getElementById('detailModalOverlay').classList.add('active');
-  document.body.style.overflow = 'hidden';
+function openDetailModal(entry, meta) {
+    document.getElementById('detailModalTitle').textContent = entry.title || '';
+    document.getElementById('detailModalBody').textContent = entry.body || '';
+    const img = document.getElementById('detailModalImage');
+    const src = resolveImage(entry.image);
+    if (entry.image) {
+        img.src = src;
+        img.style.display = 'block';
+    } else {
+        img.style.display = 'none';
+    }
+    document.getElementById('detailModalMeta').textContent = meta || '';
+    document.getElementById('detailModalOverlay').classList.add('active');
+    document.body.style.overflow = 'hidden';
 }
 
 function closeDetailModal() {
-  document.getElementById('detailModalOverlay').classList.remove('active');
-  document.body.style.overflow = 'auto';
+    document.getElementById('detailModalOverlay').classList.remove('active');
+    document.body.style.overflow = 'auto';
 }
 
 document.getElementById('detailModalClose').addEventListener('click', closeDetailModal);
 document.getElementById('detailModalOverlay').addEventListener('click', (e) => {
-  if (e.target.id === 'detailModalOverlay') closeDetailModal();
+    if (e.target.id === 'detailModalOverlay') closeDetailModal();
+});
+
+// Use event delegation so it works even after cards re-render
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('card-readmore')) {
+        const type = e.target.dataset.type;
+        const index = parseInt(e.target.dataset.index, 10);
+        if (type === 'project') openDetailModal(projectsData[index], '');
+        if (type === 'news') openDetailModal(newsData[index], 'AICODEV');
+    }
 });
 </script>
 </body>
