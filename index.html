@@ -287,6 +287,30 @@
             .gallery-grid { gap: 10px; }
             .gallery-item { height: 160px; }
         }
+
+        .detail-modal-overlay {
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; padding: 20px;
+}
+.detail-modal-overlay.active { display: flex; }
+.detail-modal {
+  background: white; border-radius: 15px; max-width: 600px; width: 100%;
+  max-height: 85vh; overflow-y: auto; padding: 30px; position: relative;
+}
+.detail-modal img { width: 100%; border-radius: 10px; margin-bottom: 20px; }
+.detail-modal h2 { color: var(--dark); margin-bottom: 10px; }
+.detail-modal-meta { color: var(--primary); font-weight: 600; margin-bottom: 15px; font-size: 0.9rem; }
+.detail-modal-body { color: var(--gray); line-height: 1.7; }
+.detail-modal-close {
+  position: absolute; top: 15px; right: 20px; background: none; border: none;
+  font-size: 1.8rem; color: var(--gray); cursor: pointer; line-height: 1;
+}
+.detail-modal-close:hover { color: var(--dark); }
+.card-readmore {
+  display: inline-block; margin-top: 10px; color: var(--primary); font-weight: 600;
+  text-decoration: none; cursor: pointer; font-size: 0.9rem;
+}
+.card-readmore:hover { color: var(--primary-dark); }
     </style>
 </head>
 <body>
@@ -491,7 +515,15 @@
             </div>
         </div>
     </footer>
-
+<div class="detail-modal-overlay" id="detailModalOverlay">
+  <div class="detail-modal">
+    <button class="detail-modal-close" id="detailModalClose">&times;</button>
+    <img id="detailModalImage" src="" alt="">
+    <h2 id="detailModalTitle"></h2>
+    <p id="detailModalMeta"></p>
+    <p id="detailModalBody"></p>
+  </div>
+</div>
     <script>
     // ===== MOBILE MENU =====
     const mobileMenuBtn = document.getElementById('mobileMenuBtn');
@@ -591,27 +623,31 @@ const res = await fetch(`https://data.jsdelivr.com/v1/packages/gh/${REPO}@${BRAN
     }
 
     // Projects
-    loadCollection('Projects', 'projectsGrid', p => `
-      <div class="project-card">
-        <div class="project-image"><img src="${resolveImage(p.image)}" alt="${p.title || ''}"></div>
-        <div class="project-content"><h3>${p.title || ''}</h3><p>${p.body || ''}</p></div>
-      </div>
-    `, 'No projects yet.');
+loadCollection('Projects', 'projectsGrid', (p, i) => `
+  <div class="project-card">
+    <div class="project-image"><img src="${resolveImage(p.image)}" alt="${p.title || ''}"></div>
+    <div class="project-content">
+      <h3>${p.title || ''}</h3>
+      <p>${p.body || ''}</p>
+      <span class="card-readmore" onclick="openDetailModal('${escapeAttr(p.title)}', '${escapeAttr(p.body)}', '${resolveImage(p.image)}', '')">Read more →</span>
+    </div>
+  </div>
+`, 'No projects yet.');
 
-    // News
-    loadCollection('News', 'newsGrid', n => `
-      <div class="news-card">
-        <div class="news-card-image">
-          ${n.image ? `<img src="${resolveImage(n.image)}" alt="${n.title || ''}">` : `<div class="news-card-image-placeholder">📰</div>`}
-        </div>
-        <div class="news-card-content">
-          <div class="news-card-meta"><span class="news-card-source">AICODEV</span></div>
-          <h3 class="news-card-title">${n.title || ''}</h3>
-          <p class="news-card-desc">${n.body || ''}</p>
-        </div>
-      </div>
-    `, 'No news yet.');
-
+// News
+loadCollection('News', 'newsGrid', (n, i) => `
+  <div class="news-card">
+    <div class="news-card-image">
+      ${n.image ? `<img src="${resolveImage(n.image)}" alt="${n.title || ''}">` : `<div class="news-card-image-placeholder">📰</div>`}
+    </div>
+    <div class="news-card-content">
+      <div class="news-card-meta"><span class="news-card-source">AICODEV</span></div>
+      <h3 class="news-card-title">${n.title || ''}</h3>
+      <p class="news-card-desc">${n.body || ''}</p>
+      <span class="card-readmore" onclick="openDetailModal('${escapeAttr(n.title)}', '${escapeAttr(n.body)}', '${resolveImage(n.image)}', 'AICODEV')">Read more →</span>
+    </div>
+  </div>
+`, 'No news yet.');
     // Team
     loadCollection('Team', 'teamGrid', m => `
       <div class="team-member">
@@ -645,6 +681,29 @@ const res = await fetch(`https://data.jsdelivr.com/v1/packages/gh/${REPO}@${BRAN
             document.getElementById('contactEmail').href = 'mailto:' + data.email;
         }
     });
+        function escapeAttr(str) {
+  return (str || '').replace(/'/g, "\\'").replace(/\n/g, ' ');
+}
+
+function openDetailModal(title, body, image, meta) {
+  document.getElementById('detailModalTitle').textContent = title;
+  document.getElementById('detailModalBody').textContent = body;
+  document.getElementById('detailModalImage').src = image;
+  document.getElementById('detailModalImage').style.display = image && image !== 'Logo.jpg' ? 'block' : 'none';
+  document.getElementById('detailModalMeta').textContent = meta;
+  document.getElementById('detailModalOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDetailModal() {
+  document.getElementById('detailModalOverlay').classList.remove('active');
+  document.body.style.overflow = 'auto';
+}
+
+document.getElementById('detailModalClose').addEventListener('click', closeDetailModal);
+document.getElementById('detailModalOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'detailModalOverlay') closeDetailModal();
+});
 </script>
 </body>
 </html>
