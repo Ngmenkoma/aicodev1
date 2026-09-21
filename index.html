@@ -295,7 +295,11 @@
 .detail-modal-overlay.active { display: flex; }
 .detail-modal {
   background: white; border-radius: 15px; max-width: 600px; width: 100%;
-  max-height: 85vh; overflow-y: auto; padding: 30px; position: relative;
+  max-height: 85vh; padding: 30px; position: relative; display: flex; flex-direction: column;
+}
+.detail-modal-scroll {
+  overflow-y: auto;
+}
 }
 .detail-modal img { width: 100%; border-radius: 10px; margin-bottom: 20px; }
 .detail-modal h2 { color: var(--dark); margin-bottom: 10px; }
@@ -431,7 +435,7 @@
     
 
     <!-- ===== NEWS FEED SECTION ===== -->
-<section class="hero" id="news">
+<section class="section" id="news">
  <div class="section-title">
                 <h2>Latest News</h2>
                 <p>Stay informed on health, development, and community stories across Ghana and Africa.</p>
@@ -519,10 +523,12 @@
 <div class="detail-modal-overlay" id="detailModalOverlay">
   <div class="detail-modal">
     <button class="detail-modal-close" id="detailModalClose">&times;</button>
-    <img id="detailModalImage" src="" alt="">
-    <h2 id="detailModalTitle"></h2>
-    <p id="detailModalMeta"></p>
-    <p id="detailModalBody"></p>
+    <div class="detail-modal-scroll">
+      <img id="detailModalImage" src="" alt="">
+      <h2 id="detailModalTitle"></h2>
+      <p id="detailModalMeta"></p>
+      <p id="detailModalBody"></p>
+    </div>
   </div>
 </div>
     <script>
@@ -612,16 +618,16 @@
         }
     }
 
-    async function loadSinglePage(file, applyFn) {
-        try {
-const res = await fetch(`https://data.jsdelivr.com/v1/packages/gh/${REPO}@${BRANCH}?structure=flat`);
-            if (!res.ok) throw new Error('missing');
-            const raw = await res.text();
-            applyFn(parseEntry(raw));
-        } catch (e) {
-            // leave existing hardcoded text as fallback
-        }
+   async function loadSinglePage(file, applyFn) {
+    try {
+        const res = await fetch(`https://cdn.jsdelivr.net/gh/${REPO}@${BRANCH}/content/${file}`);
+        if (!res.ok) throw new Error('missing');
+        const raw = await res.text();
+        applyFn(parseEntry(raw));
+    } catch (e) {
+        // leave existing hardcoded text as fallback
     }
+}
 
    // Store loaded entries so modal can look them up safely by index
 let projectsData = [];
