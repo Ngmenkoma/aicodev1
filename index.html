@@ -526,7 +526,7 @@
 
     async function getFileList() {
         if (fileListCache) return fileListCache;
-        const res = await fetch(`https://data.jsdelivr.com/v1/packages/gh/${REPO}@${BRANCH}/flat`);
+        const res = await fetch(`https://data.jsdelivr.com/v1/packages/gh/${REPO}@${BRANCH}?structure=flat`);
         const data = await res.json();
         fileListCache = data.files || [];
         return fileListCache;
