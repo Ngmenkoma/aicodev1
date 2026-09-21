@@ -106,7 +106,7 @@
         .gallery-item:hover .gallery-overlay { transform: translateY(0); opacity: 1; }
 
         /* PROJECTS */
-        .projects-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(350px,1fr)); gap: 30px; }
+        .projects-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(350px,1fr)); gap: 30px; justify-content: center; }
         .project-card { background-color: white; border-radius: 15px; overflow: hidden; box-shadow: var(--shadow); transition: var(--transition); }
         .project-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
         .project-image { height: 220px; overflow: hidden; position: relative; }
@@ -175,6 +175,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
             gap: 25px;
+}
         }
 
         .news-card {
