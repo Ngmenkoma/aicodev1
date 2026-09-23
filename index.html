@@ -288,33 +288,7 @@
             .gallery-item { height: 160px; }
         }
 
-        .detail-modal-overlay {
-  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; padding: 20px;
-}
-.detail-modal-overlay.active { display: flex; }
-.detail-modal {
-  background: white; border-radius: 15px; max-width: 600px; width: 100%;
-  max-height: 85vh; padding: 30px; position: relative; display: flex; flex-direction: column;
-}
-.detail-modal-scroll {
-  overflow-y: auto;
-}
-}
-.detail-modal img { width: 100%; border-radius: 10px; margin-bottom: 20px; }
-.detail-modal h2 { color: var(--dark); margin-bottom: 10px; }
-.detail-modal-meta { color: var(--primary); font-weight: 600; margin-bottom: 15px; font-size: 0.9rem; }
-.detail-modal-body { color: var(--gray); line-height: 1.7; }
-.detail-modal-close {
-  position: absolute; top: 15px; right: 20px; background: none; border: none;
-  font-size: 1.8rem; color: var(--gray); cursor: pointer; line-height: 1;
-}
-.detail-modal-close:hover { color: var(--dark); }
-.card-readmore {
-  display: inline-block; margin-top: 10px; color: var(--primary); font-weight: 600;
-  text-decoration: none; cursor: pointer; font-size: 0.9rem;
-}
-.card-readmore:hover { color: var(--primary-dark); }
+    
     </style>
 </head>
 <body>
@@ -520,17 +494,7 @@
             </div>
         </div>
     </footer>
-<div class="detail-modal-overlay" id="detailModalOverlay">
-  <div class="detail-modal">
-    <button class="detail-modal-close" id="detailModalClose">&times;</button>
-    <div class="detail-modal-scroll">
-      <img id="detailModalImage" src="" alt="">
-      <h2 id="detailModalTitle"></h2>
-      <p id="detailModalMeta"></p>
-      <p id="detailModalBody"></p>
-    </div>
-  </div>
-</div>
+
     <script>
     // ===== MOBILE MENU =====
     const mobileMenuBtn = document.getElementById('mobileMenuBtn');
@@ -595,6 +559,14 @@
         }
         return data;
     }
+        function timeAgo(dateStr) {
+    const diff = (Date.now() - new Date(dateStr)) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+    return new Date(dateStr).toLocaleDateString();
+}
 
     async function loadCollection(folder, targetId, renderFn, emptyMsg) {
         const grid = document.getElementById(targetId);
@@ -629,10 +601,7 @@
     }
 }
 
-   // Store loaded entries so modal can look them up safely by index
-let projectsData = [];
-let newsData = [];
-
+ 
 // Projects
 async function renderProjects() {
     const grid = document.getElementById('projectsGrid');
@@ -640,19 +609,20 @@ async function renderProjects() {
         const files = await getFileList();
         const matches = files.filter(f => f.name.startsWith('/content/Projects/') && f.name.endsWith('.md'));
         if (matches.length === 0) { grid.innerHTML = '<p>No projects yet.</p>'; return; }
-        projectsData = await Promise.all(
+        const projectsData = await Promise.all(
             matches.map(async f => {
                 const raw = await fetch(`https://cdn.jsdelivr.net/gh/${REPO}@${BRANCH}${f.name}`).then(r => r.text());
-                return parseEntry(raw);
+                const slug = f.name.split('/').pop().replace('.md', '');
+                return { ...parseEntry(raw), slug };
             })
         );
-        grid.innerHTML = projectsData.map((p, i) => `
+        grid.innerHTML = projectsData.map(p => `
             <div class="project-card">
                 <div class="project-image"><img src="${resolveImage(p.image)}" alt="${p.title || ''}"></div>
                 <div class="project-content">
                     <h3>${p.title || ''}</h3>
                     <p>${p.body || ''}</p>
-                    <span class="card-readmore" data-type="project" data-index="${i}">Read more →</span>
+                    <a class="card-readmore" href="detail.html?type=project&slug=${p.slug}">Read more →</a>
                 </div>
             </div>
         `).join('');
@@ -660,7 +630,6 @@ async function renderProjects() {
         grid.innerHTML = '<p>No projects yet.</p>';
     }
 }
-
 // News
 async function renderNews() {
     const grid = document.getElementById('newsGrid');
@@ -668,22 +637,30 @@ async function renderNews() {
         const files = await getFileList();
         const matches = files.filter(f => f.name.startsWith('/content/News/') && f.name.endsWith('.md'));
         if (matches.length === 0) { grid.innerHTML = '<p>No news yet.</p>'; return; }
-        newsData = await Promise.all(
+        let newsData = await Promise.all(
             matches.map(async f => {
                 const raw = await fetch(`https://cdn.jsdelivr.net/gh/${REPO}@${BRANCH}${f.name}`).then(r => r.text());
-                return parseEntry(raw);
+                const slug = f.name.split('/').pop().replace('.md', '');
+                return { ...parseEntry(raw), slug };
             })
         );
-        grid.innerHTML = newsData.map((n, i) => `
+
+        // Sort newest first
+        newsData.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+        grid.innerHTML = newsData.map(n => `
             <div class="news-card">
                 <div class="news-card-image">
                     ${n.image ? `<img src="${resolveImage(n.image)}" alt="${n.title || ''}">` : `<div class="news-card-image-placeholder">📰</div>`}
                 </div>
                 <div class="news-card-content">
-                    <div class="news-card-meta"><span class="news-card-source">AICODEV</span></div>
+                    <div class="news-card-meta">
+                        <span class="news-card-source">AICODEV</span>
+                        ${n.date ? `<span class="news-card-date">${timeAgo(n.date)}</span>` : ''}
+                    </div>
                     <h3 class="news-card-title">${n.title || ''}</h3>
                     <p class="news-card-desc">${n.body || ''}</p>
-                    <span class="card-readmore" data-type="news" data-index="${i}">Read more →</span>
+                    <a class="card-readmore" href="detail.html?type=news&slug=${n.slug}">Read more →</a>
                 </div>
             </div>
         `).join('');
@@ -691,9 +668,6 @@ async function renderNews() {
         grid.innerHTML = '<p>No news yet.</p>';
     }
 }
-
-renderProjects();
-renderNews();
     // Team
     loadCollection('Team', 'teamGrid', m => `
       <div class="team-member">
@@ -727,45 +701,7 @@ renderNews();
             document.getElementById('contactEmail').href = 'mailto:' + data.email;
         }
     });
-        function escapeAttr(str) {
-  return (str || '').replace(/'/g, "\\'").replace(/\n/g, ' ');
-}
-
-function openDetailModal(entry, meta) {
-    document.getElementById('detailModalTitle').textContent = entry.title || '';
-    document.getElementById('detailModalBody').textContent = entry.body || '';
-    const img = document.getElementById('detailModalImage');
-    const src = resolveImage(entry.image);
-    if (entry.image) {
-        img.src = src;
-        img.style.display = 'block';
-    } else {
-        img.style.display = 'none';
-    }
-    document.getElementById('detailModalMeta').textContent = meta || '';
-    document.getElementById('detailModalOverlay').classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeDetailModal() {
-    document.getElementById('detailModalOverlay').classList.remove('active');
-    document.body.style.overflow = 'auto';
-}
-
-document.getElementById('detailModalClose').addEventListener('click', closeDetailModal);
-document.getElementById('detailModalOverlay').addEventListener('click', (e) => {
-    if (e.target.id === 'detailModalOverlay') closeDetailModal();
-});
-
-// Use event delegation so it works even after cards re-render
-document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('card-readmore')) {
-        const type = e.target.dataset.type;
-        const index = parseInt(e.target.dataset.index, 10);
-        if (type === 'project') openDetailModal(projectsData[index], '');
-        if (type === 'news') openDetailModal(newsData[index], 'AICODEV');
-    }
-});
+       
 </script>
 </body>
 </html>
